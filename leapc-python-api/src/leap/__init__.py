@@ -62,27 +62,29 @@ cffi_location = _OS_DEFAULT_CFFI_INSTALL_LOCATION[get_system()]
 if _OVERRIDE_LEAPSDK_LOCATION is not None:
     cffi_location = _OVERRIDE_LEAPSDK_LOCATION
 
-cffi_path = os.path.join(cffi_location, "leapc_cffi")
-if os.path.isdir(cffi_path):
-    ret = check_required_files(cffi_path)
-
-    # TODO: If we can't find leapc_cffi, we could try building it
-
-    sys.path.append(cffi_location)
-
-    try:
-        from leapc_cffi import ffi, libleapc
-    except ImportError as import_error:
-        if not ret:
-            error_msg = f"Missing required files within {cffi_location}."
-        else:
-            error_msg = f"Unknown error, please consult readme for help. Attempting to find leapc_cffi within {cffi_location}"
-        raise ImportError(
-            f"Cannot import leapc_cffi: {error_msg}. Caught ImportError: {import_error}"
+# Prefer pip-installed leapc_cffi for Python version matching
+try:
+    from leapc_cffi import ffi, libleapc
+except ImportError:
+    cffi_path = os.path.join(cffi_location, "leapc_cffi")
+    if os.path.isdir(cffi_path):
+        ret = check_required_files(cffi_path)
+        sys.path.append(cffi_location)
+        try:
+            from leapc_cffi import ffi, libleapc
+        except ImportError as import_error:
+            if not ret:
+                error_msg = f"Missing required files within {cffi_location}."
+            else:
+                error_msg = "Unknown error, please consult readme for help."
+            raise ImportError(
+                f"Cannot import leapc_cffi: {error_msg}. Caught ImportError: {import_error}"
+            )
+    else:
+        raise Exception(
+            "Error: Unable to find leapc_cffi. Install with: pip install leapc-cffi "
+            "(from https://github.com/ultraleap/leapc-python-bindings)"
         )
-else:
-    error_msg = f"Error: Unable to find leapc_cffi dir within directory {cffi_location}"
-    raise Exception(error_msg)
 
 from .functions import (
     get_now,
